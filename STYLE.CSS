@@ -1,0 +1,28 @@
+
+        #map {
+            height: 80vh;
+        }
+        #marker-box {
+            padding: 10px;
+            background-color: #f4f4f4;
+            border: 1px solid #ccc;
+            margin: 10px;
+            text-align: center;
+        }
+        .leaflet-control-custom {
+            background-color: white;
+            padding: 5px;
+            border-radius: 4px;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.65);
+            text-align: center;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .leaflet-control-custom.disabled {
+            background-color: #ccc;
+            color: #999;
+            pointer-events: none;
+            cursor: not-allowed;
+        }
+    

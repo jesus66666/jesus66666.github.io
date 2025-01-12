@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Leaflet - Agregar y Eliminar Marcadores</title>
+    <!-- CSS de Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        /* Estilo del mapa */
+        #map {
+            height: 80vh;
+            width: 100%;
+        }
+
+        /* Estilo del botón de agregar marcador */
+        .add-marker-btn, .delete-marker-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1000;
+            font-size: 14px;
+        }
+
+        /* Estilo del botón de eliminar marcador */
+        .delete-marker-btn {
+            left: 140px;
+            background-color: #dc3545;
+        }
+
+        /* Estilo para el botón cuando está deshabilitado */
+        .disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        /* Efectos hover para los botones */
+        .add-marker-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .delete-marker-btn:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Botón para agregar marcadores -->
+    <button class="add-marker-btn" id="addMarkerBtn">Agregar Marcador</button>
+
+    <!-- Botón para eliminar marcadores -->
+    <button class="delete-marker-btn disabled" id="deleteMarkerBtn" disabled>Eliminar Marcador</button>
+
+    <!-- Contenedor del mapa -->
+    <div id="map"></div>
+
+    <!-- JS de Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // Inicialización del mapa centrado en Ciudad Cuauhtémoc, Chihuahua
+        var map = L.map('map').setView([28.4096, -106.8650], 16);
+
+        // Capa de calles detalladas con números de casas y nombres de calles
+        var osmDetailed = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        });
+
+        // Capa de vista satélite (ESRI World Imagery)
+        var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri, Maxar, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, and the GIS User Community'
+        });
+
+        // Añadir la capa de calles por defecto
+        osmDetailed.addTo(map);
+
+        // Control de capas
+        var baseMaps = {
+            "Calles Detalladas": osmDetailed,
+            "Vista Satélite": satellite
+        };
+        L.control.layers(baseMaps).addTo(map);
+
+        // Control de escala
+        L.control.scale().addTo(map);
+
+        // Escuchar clics en el mapa si la función de agregar marcador está activa
+        var addMarkerMode = false;
+        var selectedMarker = null;
+
+        // Evento que se dispara al hacer clic en el mapa
+        map.on('click', function(e) {
+            if (addMarkerMode) {
+                addMarker(e);
+                addMarkerMode = false; // Desactivar el modo después de agregar un marcador
+                document.getElementById('addMarkerBtn').innerText = 'Agregar Marcador';
+            }
+        });
+
+        // Función para activar/desactivar el modo de agregar marcador
+        document.getElementById('addMarkerBtn').addEventListener('click', function() {
+            addMarkerMode = !addMarkerMode;
+            this.innerText = addMarkerMode ? 'Haz clic en el mapa' : 'Agregar Marcador';
+        });
+
+        // Función para agregar un nuevo marcador al mapa
+        function addMarker(e) {
+            var marker = L.marker(e.latlng, { draggable: true }).addTo(map);
+
+            // Formulario que se mostrará en el popup
+            var formContent = `
+                <form id="markerForm-${marker._leaflet_id}">
+                    <label>Nombre: <input type="text" id="name-${marker._leaflet_id}" placeholder="Ingrese el nombre"></label><br>
+                    <label>Teléfono: <input type="text" id="phone-${marker._leaflet_id}" placeholder="Ingrese el teléfono"></label><br>
+                    <label>Renta/Venta: 
+                        <select id="status-${marker._leaflet_id}">
+                            <option value="Renta">Renta</option>
+                            <option value="Venta">Venta</option>
+                        </select>
+                    </label><br>
+                    <label>Precio: <input type="number" id="price-${marker._leaflet_id}" placeholder="Ingrese el precio"></label><br>
+                    <label>Foto: <input type="file" id="photo-${marker._leaflet_id}"></label><br>
+                    <button type="button" onclick="saveMarkerInfo(${marker._leaflet_id})">Guardar</button>
+                </form>
+            `;
+
+            // Asignar el formulario al popup del marcador
+            marker.bindPopup(formContent).openPopup();
+
+            // Evento para seleccionar un marcador
+            marker.on('click', function() {
+                selectedMarker = marker;
+                document.getElementById('deleteMarkerBtn').classList.remove('disabled');
+                document.getElementById('deleteMarkerBtn').disabled = false;
+            });
+
+            // Al finalizar el arrastre, el marcador ya no será movible
+            marker.on('dragend', function() {
+                marker.dragging.disable();
+            });
+        }
+
+        // Función para guardar la información ingresada en el formulario
+        function saveMarkerInfo(markerId) {
+            var name = document.getElementById(`name-${markerId}`).value;
+            var phone = document.getElementById(`phone-${markerId}`).value;
+            var status = document.getElementById(`status-${markerId}`).value;
+            var price = document.getElementById(`price-${markerId}`).value;
+            var photo = document.getElementById(`photo-${markerId}`).files[0];
+
+            // Obtener el marcador correspondiente
+            var marker = map._layers[markerId];
+
+            // Mostrar la información en el popup del marcador
+            if (marker) {
+                var popupContent = `
+                    <b>Información del Marcador</b><br>
+                    Nombre: ${name}<br>
+                    Teléfono: ${phone}<br>
+                    Estado: ${status}<br>
+                    Precio: $${price}<br>
+                    ${photo ? '<img src="' + URL.createObjectURL(photo) + '" width="100">' : ''}
+                `;
+                marker.getPopup().setContent(popupContent);
+                marker.openPopup();
+            }
+        }
+
+        // Función para eliminar el marcador seleccionado
+        document.getElementById('deleteMarkerBtn').addEventListener('click', function() {
+            if (selectedMarker) {
+                map.removeLayer(selectedMarker);
+                selectedMarker = null;
+
+                // Desactivar el botón de eliminar
+                this.classList.add('disabled');
+                this.disabled = true;
+            }
+        });
+    </script>
+
+</body>
+</html>
